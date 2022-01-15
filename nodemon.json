@@ -1,0 +1,15 @@
+{
+   "watch": ["**/*"],
+   "ext": "ts,json,js",
+   "ignore": [
+      "node_modules",
+      "**/*.spec.ts",
+      "package.json",
+      "package-lock.json",
+      "pm2.config.js",
+      "tsconfig.json",
+      "./vscode",
+      "./build"
+   ],
+   "exec": "ts-node --files"
+}

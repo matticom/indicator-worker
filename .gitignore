@@ -1,0 +1,14 @@
+# dotenv environment variables file
+.env
+
+# phpstorm
+.idea
+
+# Dependency directories
+node_modules/
+package-lock.json
+build/
+
+logs/
+
+.vscode/launch.json
