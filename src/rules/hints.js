@@ -13,14 +13,16 @@ export function recentlyDropped(data, currentIdx) {
    // console.log('consideredData :>> ', consideredData);
    // console.log('maxValue :>> ', maxValue);
    const dropValue = 100 - (100 * currentValue) / maxValue;
-   console.log('dropValue :>> ', dropValue);
-   console.log('current date :>> ', moment.unix(data[currentIdx].date).format('D. MMM YYYY'));
+   // interesting -----
+   // console.log('dropValue :>> ', dropValue);
+   // console.log('current date :>> ', moment.unix(data[currentIdx].date).format('D. MMM YYYY'));
    const dpThresholdReached = dropValue > RECENTLY_DROPPED_PERCENT;
    if (dpThresholdReached) {
-      console.log(
-         `!!!! Drop of more than ${RECENTLY_DROPPED_PERCENT}:>> `,
-         moment.unix(data[currentIdx].date).format('D. MMM YYYY'),
-      );
+      // interesting -----
+      // console.log(
+      //    `!!!! Drop of more than ${RECENTLY_DROPPED_PERCENT}:>> `,
+      //    moment.unix(data[currentIdx].date).format('D. MMM YYYY'),
+      // );
    }
 }
 

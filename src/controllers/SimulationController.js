@@ -8,9 +8,18 @@ import { getNewDataSet, annotationTransform } from '../tools/ChartTools';
 import { sleep } from '../tools/General';
 
 let stopFlag = false;
+let connected = false;
 
 export function stopSimulation() {
    stopFlag = true;
+}
+
+export function setConnected() {
+   connected = true;
+}
+
+export function setDisconnected() {
+   connected = false;
 }
 
 export async function simulate(start, end, simuCalcWindow, sourceData) {
@@ -21,6 +30,12 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
    const data = rawData.map((dayData) => dayData.value);
    const labels = rawData.map((dayData) => moment.unix(dayData.date).format('D. MMM YYYY'));
    const chartData = { labels, datasets: [getNewDataSet(data, 'Currency')] };
+
+   if (data.length + 1 < beforeCalcStarted) {
+      console.log(`Selected start-end-range is to small!`);
+      sendNotification(SIMULATION, { type: 'stop' });
+      return;
+   }
 
    const startDate = rawData[beforeCalcStarted].date;
 
@@ -40,21 +55,33 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
          sendNotification(SIMULATION, { type: 'stop' });
          return;
       }
-      const secureWindow = simuCalcWindow ? (simuCalcWindow < index ? simuCalcWindow : index) : 0;
+      const offsetStart = index;
+      const secureWindow = simuCalcWindow ? (simuCalcWindow < offsetStart ? simuCalcWindow : offsetStart) : 0;
+
       const startOfCalc = simuCalcWindow ? rawData[index - secureWindow].date : 0;
       const endOfCalc = rawData[index].date;
 
       const dataToBeCalc = simuCalcWindow
          ? rawData.filter((data) => data.date >= startOfCalc && data.date <= endOfCalc)
          : rawData.filter((data) => data.date <= endOfCalc);
+
+      const currentLastIndex = dataToBeCalc.length - 1;
+
       const { topX } = evaluateParams([...dataToBeCalc]);
       const startLabel = dataToBeCalc[0].date;
       const currentLabel = endOfCalc;
       // console.log('\n\n>>>> new cycle :>> ', counter);
       // console.log('start Of cycle :>> ', startLabel);
       // console.log('end Of cycle :>> ', currentLabel);
+      // console.log('dataToBeCalc :>> ', dataToBeCalc);
+
+      // interesting -----
+      // console.log('dataToBeCalc length:>> ', dataToBeCalc.length);
+      // console.log('currentLastIndex:>> ', currentLastIndex);
 
       const result = topX.length === 0 ? 'nada' : topX[0];
+
+      // interesting -----
       // console.log('result :>> ', result);
 
       sendNotification(SIMULATION, {
@@ -86,9 +113,12 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       const calcLastAction = currentState.lastAction;
       const currentPrice = currentState.price;
       const calcLabel = currentState.lastActionDate;
+
+      // interesting -----
       // console.log('current Price :>> ', currentPrice);
 
-      recentlyDropped(dataToBeCalc, index);
+      // just indicator
+      recentlyDropped(dataToBeCalc, currentLastIndex);
 
       if (lastAction === 'buy') {
          if (afterBuyDropThresholdReached(transactionList, currentPrice)) {
@@ -99,7 +129,7 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
             lastAction = 'sold';
             rule = 'ABD';
             lastActionDate = currentLabel;
-         } else if (peakDropReachedThreshold(dataToBeCalc, index, transactionList)) {
+         } else if (peakDropReachedThreshold(dataToBeCalc, currentLastIndex, transactionList)) {
             ruleApplied = true;
             lastSavings = currentPrice * lastPieces;
             lastPieces = 0;
@@ -121,7 +151,7 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
 
          if (lastAction === 'sold' || lastAction === '') {
             if (calcLastAction === 'buy') {
-               // if (waitAfterSpike(dataToBeCalc, index)) {
+               // if (waitAfterSpike(dataToBeCalc, currentLastIndex)) {
                //    waitedAfterSpike = true;
                //    continue;
                // }
@@ -142,9 +172,11 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
          }
 
          if (lastAction === 'buy') {
-            console.log('last buy :>> ', currentPrice);
+            // interesting -----
+            // console.log('last buy :>> ', currentPrice);
             if (calcLastAction === 'sold') {
-               console.log('sold :>> ');
+               // interesting -----
+               // console.log('sold :>> ');
                lastSavings = currentPrice * lastPieces;
                lastPieces = 0;
                annotations.push({ unixLabel: currentLabel, action: 'Sold', color: '#4dbd74', counter });
@@ -179,6 +211,14 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       // console.log('lastAction :>> ', lastAction);
       // console.log('lastActionDate :>> ', lastActionDate);
 
+      if (connected) {
+         // console.log('Connected :>> ', connected);
+      } else {
+         console.log('Disconnected, wait for some seconds');
+         await sleep(5000);
+         console.log('Connection state', connected);
+      }
+
       sendNotification(SIMULATION, {
          type: 'cycle update action',
          data: {
@@ -190,7 +230,7 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
             lastActionDate,
          },
       });
-      await sleep(0);
+      await sleep(500);
    }
 
    sendNotification(SIMULATION, {

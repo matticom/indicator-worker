@@ -10,11 +10,11 @@ export const MIN_DAYS = 3; //10
 export const MAX_DAYS = 100; //100
 export const MAX_TRANSACTIONS_PER_YEAR = 12; //12
 
-export const MAX_DROP_PERCENT = 12; //20;
+export const MAX_DROP_PERCENT = 20; //20;
 export const LOOK_BACK_FOR_PEAK_WINDOW_IN_DAYS = 100; //100;
 export const MAX_TWO_DAY_SPIKE_PERCENT = 10;
 export const WAITING_AFTER_SPIKE_DAYS = 10;
-export const MAX_DROP_AFTER_BUY = 6;
+export const MAX_DROP_AFTER_BUY = 25; //6
 
 export const RECENTLY_DROPPED_PERCENT = 10; //20;
 export const RECENTLY_TIME_SPAN_DAYS = 3; //20;

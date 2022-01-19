@@ -1,5 +1,6 @@
 import socketIO from 'socket.io';
 import { BEST_STATIC_PARAM, GIVEN_STATIC_PARAM, SIMULATION } from '../constants';
+import { setConnected, setDisconnected, stopSimulation } from '../controllers/SimulationController';
 import { simulationHandler } from '../wsHandlers/SimulationHandler';
 import { getChartWithBestParams, getChartWithGivenParams } from '../wsHandlers/StaticParamChartHandler';
 
@@ -13,9 +14,15 @@ let io = null;
 function startService(httpServer) {
    io = socketIO(httpServer, options);
    io.on('connection', (socket) => {
+      setConnected(true);
       socket.on(SIMULATION, simulationHandler);
       socket.on(BEST_STATIC_PARAM, getChartWithBestParams);
       socket.on(GIVEN_STATIC_PARAM, getChartWithGivenParams);
+      socket.on('disconnect', function () {
+         console.log('Got disconnect!');
+         // stopSimulation();
+         setDisconnected();
+      });
    });
 }
 
