@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { INITIAL_MONEY, SIMULATION } from '../constants';
-import { peakDetection, recentlyDropped } from '../rules/hints';
+import { peakPlateauDetection, recentlyDropped } from '../rules/hints';
 import { afterBuyDropThresholdReached, peakDropReachedThreshold, waitAfterSpike } from '../rules/rules';
 import { staticPercentThresholds } from '../rules/short term/hints';
 import { sendNotification } from '../services/CommunicationService';
@@ -246,7 +246,7 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
    //    });
    // });
 
-   const peaks = peakDetection([...rawData].slice(0, 100));
+   const peakPlateau = peakPlateauDetection([...rawData].slice(0, 100));
    const labelColors = {
       low: '#c610f2',
       high: '#cead74',
@@ -254,7 +254,7 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       plateau_end: '#1e97f5',
    };
 
-   peaks.forEach(({ date, type }, idx) => {
+   peakPlateau.forEach(({ date, type }, idx) => {
       annotations.push({
          unixLabel: date,
          action: type,
