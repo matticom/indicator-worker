@@ -27,3 +27,67 @@ export function recentlyDropped(data, currentIdx) {
 }
 
 // what about slight declines -2 +1 -3 +1 -2 --> sliding windows --> acknowledge = reset
+
+const PEAK_PERCENT = 10;
+
+export function peakDetection(dayData) {
+   let negativeSlope = false;
+   let positiveSlope = false;
+   let start = true;
+
+   let currentPeak = dayData[0];
+   const foundPeaks = [];
+
+   dayData.forEach((quote) => {
+      const { value } = quote;
+      if (start) {
+         if (value > upperThreshold(currentPeak.value)) {
+            positiveSlope = true;
+            currentPeak = quote;
+            start = false;
+         }
+         if (value < bottomThreshold(currentPeak.value)) {
+            negativeSlope = true;
+            currentPeak = quote;
+            start = false;
+         }
+      } else {
+         if (positiveSlope) {
+            if (value < bottomThreshold(currentPeak.value)) {
+               negativeSlope = true;
+               positiveSlope = false;
+               foundPeaks.push({ ...currentPeak, type: 'high' });
+               currentPeak = quote; // new low peak
+            }
+            if (currentPeak.value < quote.value) {
+               currentPeak = quote;
+            }
+         }
+         if (negativeSlope) {
+            if (value > upperThreshold(currentPeak.value)) {
+               negativeSlope = false;
+               positiveSlope = true;
+               foundPeaks.push({ ...currentPeak, type: 'low' });
+               currentPeak = quote; // new high peak
+            }
+            if (currentPeak.value > quote.value) {
+               currentPeak = quote;
+            }
+         }
+      }
+   });
+   return foundPeaks.map(({ value, date, type }) => ({
+      value,
+      date,
+      dateStr: moment.unix(date).format('YYYY-MM-DD'),
+      type,
+   }));
+}
+
+function upperThreshold(reference) {
+   return reference + (reference * PEAK_PERCENT) / 100;
+}
+
+function bottomThreshold(reference) {
+   return reference - (reference * PEAK_PERCENT) / 100;
+}

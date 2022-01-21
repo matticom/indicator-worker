@@ -1,7 +1,8 @@
 import moment from 'moment';
 import { INITIAL_MONEY, SIMULATION } from '../constants';
-import { recentlyDropped } from '../rules/hints';
+import { peakDetection, recentlyDropped } from '../rules/hints';
 import { afterBuyDropThresholdReached, peakDropReachedThreshold, waitAfterSpike } from '../rules/rules';
+import { staticPercentThresholds } from '../rules/short term/hints';
 import { sendNotification } from '../services/CommunicationService';
 import { evaluateParams } from '../services/ParamEvalutionService';
 import { getNewDataSet, annotationTransform } from '../tools/ChartTools';
@@ -232,6 +233,29 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       });
       await sleep(500);
    }
+
+   const thresholds = [5, 10, 20, 30, 60, 100, 250, 500, 1000];
+   let res = staticPercentThresholds([...rawData].slice(25, rawData.length), thresholds);
+   console.log('res :>> ', res);
+   res.history.forEach((event, idx) => {
+      annotations.push({
+         unixLabel: event.date,
+         action: `${event.type === 'positive' ? '+' : '-'} ${event.threshold}%`,
+         color: event.type === 'positive' ? '#cead74' : '#c610f2',
+         counter: annotations.length + idx,
+      });
+   });
+
+   // const peaks = peakDetection(rawData);
+
+   // peaks.forEach(({ date, type }, idx) => {
+   //    annotations.push({
+   //       unixLabel: date,
+   //       action: type,
+   //       color: type === 'high' ? '#cead74' : '#c610f2',
+   //       counter: annotations.length + idx,
+   //    });
+   // });
 
    sendNotification(SIMULATION, {
       type: 'completed',

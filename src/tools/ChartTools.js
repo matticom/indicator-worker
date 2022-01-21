@@ -33,7 +33,13 @@ export function getAnnotation(value, label, color, counter) {
          backgroundColor: 'rgba(0,0,0, 0.9)',
          content: label,
          enabled: true,
-         yAdjust: 50,
+         yAdjust: getYposition(counter),
       },
    };
+}
+
+export function getYposition(counter) {
+   const maxCount = 5;
+   const modulo = counter % maxCount;
+   return -25 * modulo + 50;
 }
