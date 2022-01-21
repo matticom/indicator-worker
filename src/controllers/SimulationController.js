@@ -234,28 +234,39 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       await sleep(500);
    }
 
-   const thresholds = [5, 10, 20, 30, 60, 100, 250, 500, 1000];
-   let res = staticPercentThresholds([...rawData].slice(25, rawData.length), thresholds);
-   console.log('res :>> ', res);
-   res.history.forEach((event, idx) => {
+   // const thresholds = [5, 10, 20, 30, 60, 100, 250, 500, 1000];
+   // let res = staticPercentThresholds([...rawData].slice(25, rawData.length), thresholds);
+   // console.log('res :>> ', res);
+   // res.history.forEach((event, idx) => {
+   //    annotations.push({
+   //       unixLabel: event.date,
+   //       action: `${event.type === 'positive' ? '+' : '-'} ${event.threshold}%`,
+   //       color: event.type === 'positive' ? '#cead74' : '#c610f2',
+   //       counter: annotations.length + idx,
+   //    });
+   // });
+
+   const peaks = peakDetection([...rawData].slice(0, 100));
+   const labelColors = {
+      low: '#c610f2',
+      high: '#cead74',
+      plateau_start: '#9ed7a5',
+      plateau_end: '#1e97f5',
+   };
+
+   peaks.forEach(({ date, type }, idx) => {
       annotations.push({
-         unixLabel: event.date,
-         action: `${event.type === 'positive' ? '+' : '-'} ${event.threshold}%`,
-         color: event.type === 'positive' ? '#cead74' : '#c610f2',
+         unixLabel: date,
+         action: type,
+         color: labelColors[type],
          counter: annotations.length + idx,
       });
    });
 
-   // const peaks = peakDetection(rawData);
-
-   // peaks.forEach(({ date, type }, idx) => {
-   //    annotations.push({
-   //       unixLabel: date,
-   //       action: type,
-   //       color: type === 'high' ? '#cead74' : '#c610f2',
-   //       counter: annotations.length + idx,
-   //    });
-   // });
+   console.log(
+      ' :>> ',
+      [...rawData].slice(0, 80).map((ele) => ({ ...ele, dateStr: moment.unix(ele.date).format('YYYY-MM-DD') })),
+   );
 
    sendNotification(SIMULATION, {
       type: 'completed',

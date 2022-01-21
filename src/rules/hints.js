@@ -29,16 +29,21 @@ export function recentlyDropped(data, currentIdx) {
 // what about slight declines -2 +1 -3 +1 -2 --> sliding windows --> acknowledge = reset
 
 const PEAK_PERCENT = 10;
+const PLATEAU_MIN_LENGTH = 5;
+const PLATEAU_TOLERANCE_PERCENT = 3;
 
 export function peakDetection(dayData) {
    let negativeSlope = false;
    let positiveSlope = false;
    let start = true;
+   let currentPlateauLength = 1;
+   let currentUpperPlateauThreshold = 0;
+   let currentBottomPlateauThreshold = 0;
 
    let currentPeak = dayData[0];
    const foundPeaks = [];
 
-   dayData.forEach((quote) => {
+   dayData.forEach((quote, idx, dataArray) => {
       const { value } = quote;
       if (start) {
          if (value > upperThreshold(currentPeak.value)) {
@@ -52,6 +57,48 @@ export function peakDetection(dayData) {
             start = false;
          }
       } else {
+         console.log('\n\n idx:>> ', idx);
+         if (currentPlateauLength === 1) {
+            const upperPlateauThreshold = upperThreshold(dataArray[idx - 1].value, PLATEAU_TOLERANCE_PERCENT);
+            const bottomPlateauThreshold = bottomThreshold(dataArray[idx - 1].value, PLATEAU_TOLERANCE_PERCENT);
+            console.log('1  upperPlateauThreshold:>> ', upperPlateauThreshold);
+            console.log('1  bottomPlateauThreshold:>> ', bottomPlateauThreshold);
+            console.log('value:>> ', value);
+            console.log('date:>> ', moment.unix(quote.date).format('YYYY-MM-DD'));
+            if (bottomPlateauThreshold <= value && value <= upperPlateauThreshold) {
+               currentUpperPlateauThreshold = upperPlateauThreshold;
+               currentBottomPlateauThreshold = bottomPlateauThreshold;
+               currentPlateauLength = 2;
+            }
+         } else {
+            // currentPlateauLength > 1
+            const upperPlateauThreshold = currentUpperPlateauThreshold;
+            const bottomPlateauThreshold = currentBottomPlateauThreshold;
+            console.log('>1  currentPlateauLength:>> ', currentPlateauLength);
+            console.log('>1  upperPlateauThreshold:>> ', upperPlateauThreshold);
+            console.log('>1  bottomPlateauThreshold:>> ', bottomPlateauThreshold);
+            console.log('value:>> ', value);
+            console.log('date:>> ', moment.unix(quote.date).format('YYYY-MM-DD'));
+            if (bottomPlateauThreshold <= value && value <= upperPlateauThreshold) {
+               console.log('next value:>> ');
+
+               currentPlateauLength += 1;
+            } else {
+               if (currentPlateauLength >= PLATEAU_MIN_LENGTH) {
+                  console.log('+++++ new plateau end:>> ');
+                  console.log(
+                     'start :>> ',
+                     moment.unix(dataArray[idx - currentPlateauLength].date).format('YYYY-MM-DD'),
+                  );
+                  console.log('end :>> ', moment.unix(dataArray[idx - 1].date).format('YYYY-MM-DD'));
+                  foundPeaks.push({ ...dataArray[idx - currentPlateauLength], type: 'plateau_start' });
+                  foundPeaks.push({ ...dataArray[idx - 1], type: 'plateau_end' });
+               }
+               console.log('---- plateau too short:>> ');
+               currentPlateauLength = 1;
+            }
+         }
+
          if (positiveSlope) {
             if (value < bottomThreshold(currentPeak.value)) {
                negativeSlope = true;
@@ -84,10 +131,10 @@ export function peakDetection(dayData) {
    }));
 }
 
-function upperThreshold(reference) {
-   return reference + (reference * PEAK_PERCENT) / 100;
+function upperThreshold(reference, percentage = PEAK_PERCENT) {
+   return reference + (reference * percentage) / 100;
 }
 
-function bottomThreshold(reference) {
-   return reference - (reference * PEAK_PERCENT) / 100;
+function bottomThreshold(reference, percentage = PEAK_PERCENT) {
+   return reference - (reference * percentage) / 100;
 }
