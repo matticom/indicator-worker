@@ -28,9 +28,14 @@ export function recentlyDropped(data, currentIdx) {
 
 // what about slight declines -2 +1 -3 +1 -2 --> sliding windows --> acknowledge = reset
 
+// min de/increase after new peak, so that acknowledged as peak
 const PEAK_PERCENT = 10;
-const PLATEAU_MIN_LENGTH = 5;
-const PLATEAU_TOLERANCE_PERCENT = 3;
+
+// if percentage not reached max after X time units acknowledged as peak
+// the less volatile the asset price the longer this value (e.g. Gold = very low volatile => 60 days)
+const MAX_PEAK_DETERMINATION = 60;
+const PLATEAU_MIN_LENGTH = 15;
+const PLATEAU_TOLERANCE_PERCENT = 1;
 
 export function peakPlateauDetection(dayData) {
    let negativeSlope = false;
@@ -42,9 +47,14 @@ export function peakPlateauDetection(dayData) {
 
    let currentPeak = dayData[0];
    const foundPeakPlateau = [];
+   let peakAcknowledgeCounter = 0;
 
    dayData.forEach((quote, idx, dataArray) => {
       const { value } = quote;
+      console.log('\n------> date :>> ', moment.unix(dataArray[idx].date).format('YYYY-MM-DD'));
+      console.log('value :>> ', value);
+      console.log(`currentPeak (${negativeSlope ? 'low' : 'high'}):>> `, currentPeak);
+      console.log('peakAcknowledgeCounter :>> ', peakAcknowledgeCounter);
       if (start) {
          if (value > upperThreshold(currentPeak.value)) {
             positiveSlope = true;
@@ -73,7 +83,6 @@ export function peakPlateauDetection(dayData) {
                currentPlateauLength += 1;
             } else {
                if (currentPlateauLength >= PLATEAU_MIN_LENGTH) {
-               
                   foundPeakPlateau.push({ ...dataArray[idx - currentPlateauLength], type: 'plateau_start' });
                   foundPeakPlateau.push({ ...dataArray[idx - 1], type: 'plateau_end' });
                }
@@ -82,25 +91,37 @@ export function peakPlateauDetection(dayData) {
          }
 
          if (positiveSlope) {
-            if (value < bottomThreshold(currentPeak.value)) {
+            console.log('vv bottomThreshold :>> ', bottomThreshold(currentPeak.value));
+            peakAcknowledgeCounter++;
+            if (value < bottomThreshold(currentPeak.value) || peakAcknowledgeCounter > MAX_PEAK_DETERMINATION) {
                negativeSlope = true;
                positiveSlope = false;
                foundPeakPlateau.push({ ...currentPeak, type: 'high' });
-               currentPeak = quote; // new low peak
+               console.log('----- // ------ found high peak :>> ', { ...currentPeak });
+               peakAcknowledgeCounter = 0;
+               currentPeak = quote; // new low peak (2)
             }
             if (currentPeak.value < quote.value) {
-               currentPeak = quote;
+               console.log('found new higher peak (1) ');
+               currentPeak = quote; // found new higher peak (1)
+               peakAcknowledgeCounter = 0;
             }
          }
          if (negativeSlope) {
-            if (value > upperThreshold(currentPeak.value)) {
+            console.log('^^upperThreshold :>> ', upperThreshold(currentPeak.value));
+            peakAcknowledgeCounter++;
+            if (value > upperThreshold(currentPeak.value) || peakAcknowledgeCounter > MAX_PEAK_DETERMINATION) {
                negativeSlope = false;
                positiveSlope = true;
                foundPeakPlateau.push({ ...currentPeak, type: 'low' });
-               currentPeak = quote; // new high peak
+               console.log('----- // ------ found low peak :>> ', { ...currentPeak });
+               peakAcknowledgeCounter = 0;
+               currentPeak = quote; // new high peak (2)
             }
             if (currentPeak.value > quote.value) {
-               currentPeak = quote;
+               console.log('found new lower peak (1) ');
+               currentPeak = quote; // found new lower peak (1)
+               peakAcknowledgeCounter = 0;
             }
          }
       }

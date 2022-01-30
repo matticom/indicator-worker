@@ -245,8 +245,8 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
    //       counter: annotations.length + idx,
    //    });
    // });
-
-   const peakPlateau = peakPlateauDetection([...rawData].slice(0, 100));
+   console.log('rawData :>> ', rawData[0]);
+   const peakPlateau = peakPlateauDetection(rawData); //[...rawData].slice(0, 100));
    const labelColors = {
       low: '#c610f2',
       high: '#cead74',
@@ -263,10 +263,10 @@ export async function simulate(start, end, simuCalcWindow, sourceData) {
       });
    });
 
-   console.log(
-      ' :>> ',
-      [...rawData].slice(0, 80).map((ele) => ({ ...ele, dateStr: moment.unix(ele.date).format('YYYY-MM-DD') })),
-   );
+   // console.log(
+   //    ' :>> ',
+   //    [...rawData].slice(0, 80).map((ele) => ({ ...ele, dateStr: moment.unix(ele.date).format('YYYY-MM-DD') })),
+   // );
 
    sendNotification(SIMULATION, {
       type: 'completed',
