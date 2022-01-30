@@ -7,6 +7,8 @@ import { getChartWithBestParams, getChartWithGivenParams } from '../wsHandlers/S
 const options = {
    path: '/notification/',
    cors: {},
+   pingTimeout: 300 * 1000,
+   pingInterval: 60 * 1000,
 };
 
 let io = null;
